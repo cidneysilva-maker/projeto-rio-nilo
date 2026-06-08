@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Smart Irrigation</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>SMART IRRIGATION SYSTEM</h1>
+
+        <div class="cards">
+
+            <div class="card">
+                <h2>🌱 Umidade</h2>
+                <p id="soil">0%</p>
+                <span id="level">---</span>
+            </div>
+
+            <div class="card">
+                <h2>🔋 Bateria</h2>
+                <p id="battery">0%</p>
+            </div>
+
+            <div class="card">
+                <h2>☀️ Luminosidade</h2>
+                <p id="light">0%</p>
+            </div>
+
+            <div class="card">
+                <h2>🌧️ Chuva</h2>
+                <p id="rain">---</p>
+            </div>
+
+            <div class="card">
+                <h2>🚿 Bomba</h2>
+                <p id="pump">---</p>
+            </div>
+
+            <div class="card">
+                <h2>🦾 Servo</h2>
+                <p id="servo">---</p>
+            </div>
+
+        </div>
+
+        <div class="controls">
+
+            <button onclick="sendCommand('ON')">
+                LIGAR
+            </button>
+
+            <button onclick="sendCommand('OFF')">
+                DESLIGAR
+            </button>
+
+            <button onclick="sendCommand('AUTO')">
+                AUTOMÁTICO
+            </button>
+
+        </div>
+
+        <div class="chart-container">
+
+            <canvas id="chart"></canvas>
+
+        </div>
+
+    </div>
+
+    <script src="/static/script.js"></script>
+
+</body>
+</html>
