@@ -91,3 +91,74 @@ button:hover {
 
     border-radius: 16px;
 }
+/* ======================================
+   RESPONSIVIDADE PARA CELULAR
+====================================== */
+
+@media (max-width: 768px) {
+
+    h1 {
+        font-size: 28px;
+        margin-top: 15px;
+    }
+
+    .container {
+        width: 95%;
+    }
+
+    .cards {
+
+        grid-template-columns: 1fr;
+        gap: 15px;
+
+    }
+
+    .card {
+
+        padding: 15px;
+        border-radius: 12px;
+
+    }
+
+    .card h2 {
+
+        font-size: 20px;
+
+    }
+
+    .card p {
+
+        font-size: 24px;
+
+    }
+
+    .card span {
+
+        font-size: 14px;
+
+    }
+
+    .controls {
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+    }
+
+    button {
+
+        width: 90%;
+        max-width: 300px;
+        margin: 8px 0;
+        font-size: 16px;
+
+    }
+
+    .chart-container {
+
+        padding: 10px;
+
+    }
+
+}
