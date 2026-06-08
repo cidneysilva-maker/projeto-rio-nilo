@@ -1,0 +1,178 @@
+from flask import Flask, request, jsonify, render_template
+import sqlite3
+from datetime import datetime
+
+app = Flask(__name__)
+
+# =========================================================
+# DATABASE
+# =========================================================
+
+def init_db():
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS readings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp TEXT,
+        soil INTEGER,
+        level TEXT,
+        rain INTEGER,
+        battery INTEGER,
+        pump INTEGER,
+        light INTEGER,
+        servo TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# =========================================================
+# COMANDO GLOBAL
+# =========================================================
+
+current_command = "AUTO"
+
+# =========================================================
+# HOME
+# =========================================================
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+# =========================================================
+# RECEBER DADOS DO ESP32
+# =========================================================
+
+@app.route("/api/dados")
+def receber_dados():
+
+    soil = request.args.get("umidade")
+    level = request.args.get("nivel")
+    rain = request.args.get("chuva")
+    battery = request.args.get("bateria")
+    pump = request.args.get("bomba")
+    light = request.args.get("luminosidade")
+    servo = request.args.get("servo")
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    INSERT INTO readings (
+        timestamp,
+        soil,
+        level,
+        rain,
+        battery,
+        pump,
+        light,
+        servo
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        datetime.now().strftime("%H:%M:%S"),
+        soil,
+        level,
+        rain,
+        battery,
+        pump,
+        light,
+        servo
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return "OK"
+
+# =========================================================
+# STATUS ATUAL
+# =========================================================
+
+@app.route("/api/status")
+def status():
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT *
+    FROM readings
+    ORDER BY id DESC
+    LIMIT 1
+    """)
+
+    row = cursor.fetchone()
+
+    conn.close()
+
+    if row:
+
+        return jsonify({
+            "timestamp": row[1],
+            "soil": row[2],
+            "level": row[3],
+            "rain": row[4],
+            "battery": row[5],
+            "pump": row[6],
+            "light": row[7],
+            "servo": row[8],
+            "command": current_command
+        })
+
+    return jsonify({})
+
+# =========================================================
+# HISTÓRICO
+# =========================================================
+
+@app.route("/api/historico")
+def historico():
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT timestamp, soil
+    FROM readings
+    ORDER BY id DESC
+    LIMIT 20
+    """)
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    rows.reverse()
+
+    return jsonify(rows)
+
+# =========================================================
+# COMANDOS
+# =========================================================
+
+@app.route("/api/comando")
+def comando():
+
+    global current_command
+
+    mode = request.args.get("mode")
+
+    if mode:
+        current_command = mode
+
+    return current_command
+
+# =========================================================
+# START
+# =========================================================
+
+if __name__ == "__main__":
+   app.run(host="0.0.0.0", port=5000, debug=True)
