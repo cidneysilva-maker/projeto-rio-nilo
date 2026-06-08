@@ -1,0 +1,75 @@
+const ctx = document.getElementById('chart');
+
+const chart = new Chart(ctx, {
+
+    type: 'line',
+
+    data: {
+
+        labels: [],
+
+        datasets: [{
+
+            label: 'Umidade do Solo',
+
+            data: []
+        }]
+    }
+});
+
+async function updateData() {
+
+    const response = await fetch('/api/status');
+
+    const data = await response.json();
+
+    document.getElementById("soil").innerText =
+        data.soil + "%";
+
+    document.getElementById("level").innerText =
+        data.level;
+
+    document.getElementById("battery").innerText =
+        data.battery + "%";
+
+    document.getElementById("light").innerText =
+        data.light + "%";
+
+    document.getElementById("rain").innerText =
+        data.rain == 1 ? "SIM" : "NÃO";
+
+    document.getElementById("pump").innerText =
+        data.pump == 1 ? "LIGADA" : "DESLIGADA";
+
+    document.getElementById("servo").innerText =
+        data.servo;
+}
+
+async function updateChart() {
+
+    const response = await fetch('/api/historico');
+
+    const data = await response.json();
+
+    chart.data.labels = data.map(item => item[0]);
+
+    chart.data.datasets[0].data =
+        data.map(item => item[1]);
+
+    chart.update();
+}
+
+async function sendCommand(mode) {
+
+    await fetch(`/api/comando?mode=${mode}`);
+}
+
+setInterval(() => {
+
+    updateData();
+    updateChart();
+
+}, 3000);
+
+updateData();
+updateChart();
