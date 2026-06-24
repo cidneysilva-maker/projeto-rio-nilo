@@ -1,8 +1,8 @@
 # projeto-rio-nilo
-# ==========================================================
+# 
 # SISTEMA DE IRRIGAÇÃO + CONTROLE DE LUMINOSIDADE
 # ESP32 + MICROPYTHON
-# ==========================================================
+# 
 #
 # FUNÇÕES:
 # - Monitoramento da umidade do solo
@@ -14,13 +14,13 @@
 # - Servo motor automático
 # - Envio de dados para URL/API
 #
-# ==========================================================
+# 
 
 #from machine import Pin, ADC, PWM
 
-# ==========================================================
+# 
 # WIFI
-# ==========================================================
+# 
 
 from abc import ABC
 from http.client import NETWORK_AUTHENTICATION_REQUIRED
@@ -29,16 +29,17 @@ import time
 from urllib import request
 
 
-SSID = "SEU_WIFI"
-PASSWORD = "SUA_SENHA"
+SSID = "ROBOTICA_GDF"
+PASSWORD = "12345678"
 
-SERVER_URL = "10.135.55.84"
 
-COMMAND_URL = "10.135.55.84"
+SERVER_URL = "http://192.168.1.4:5000/api/dados"
 
-# ==========================================================
+COMMAND_URL = "http://192.168.1.4:5000/api/command"
+
+# 
 # PINOS
-# ==========================================================
+# 
 
 # Sensor umidade
 soil_sensor = ABC(bin(34))
@@ -62,9 +63,9 @@ pump = bin(26, bin.OUT)
 # Servo motor
 servo = POSIX_SPAWN_CLOSEFROM(bin(27), freq=50)
 
-# ==========================================================
+# 
 # CALIBRAÇÃO
-# ==========================================================
+# 
 
 # SOLO
 DRY_VALUE = 3500
@@ -74,10 +75,9 @@ WET_VALUE = 1500
 LIGHT_MIN = 0
 LIGHT_MAX = 4095
 
-# ==========================================================
+# 
 # WIFI
-# ==========================================================
-
+# 
 def connect_wifi():
 
     wifi = NETWORK_AUTHENTICATION_REQUIRED.WLAN(network.STA_IF) # pyright: ignore[reportUndefinedVariable]
@@ -97,9 +97,9 @@ def connect_wifi():
     print("WiFi conectado!")
     print(wifi.ifconfig())
 
-# ==========================================================
+# 
 # MAP
-# ==========================================================
+# 
 
 def map_value(x, in_min, in_max, out_min, out_max):
 
@@ -109,10 +109,9 @@ def map_value(x, in_min, in_max, out_min, out_max):
         + out_min
     )
 
-# ==========================================================
+# 
 # CONTROLE SERVO
-# ==========================================================
-
+# 
 def set_servo_angle(angle):
 
     # Conversão ângulo -> duty
@@ -121,9 +120,9 @@ def set_servo_angle(angle):
 
     servo.duty(duty)
 
-# ==========================================================
+# 
 # LEITURA UMIDADE
-# ==========================================================
+# 
 
 def read_soil():
 
@@ -158,9 +157,9 @@ def read_soil():
 
     return percent, level
 
-# ==========================================================
+# 
 # LEITURA CHUVA
-# ==========================================================
+# 
 
 def read_rain():
 
@@ -170,10 +169,9 @@ def read_rain():
 
     return raining
 
-# ==========================================================
+# 
 # LEITURA BATERIA
-# ==========================================================
-
+# 
 def read_battery():
 
     raw = battery_sensor.read()
@@ -192,10 +190,9 @@ def read_battery():
 
     return percent
 
-# ==========================================================
+# 
 # LEITURA LUMINOSIDADE
-# ==========================================================
-
+# 
 def read_light():
 
     raw = light_sensor.read()
@@ -212,9 +209,9 @@ def read_light():
 
     return percent
 
-# ==========================================================
+# 
 # CONTROLE SERVO AUTOMÁTICO
-# ==========================================================
+# 
 
 def control_servo(light_percent):
 
@@ -242,9 +239,9 @@ def control_servo(light_percent):
 
         return "ABAIXADO"
 
-# ==========================================================
+# 
 # CONTROLE BOMBA
-# ==========================================================
+# 
 
 def automatic_pump_control(soil_percent, raining):
 
@@ -258,10 +255,9 @@ def automatic_pump_control(soil_percent, raining):
         pump.value(0)
         return False
 
-# ==========================================================
+# 
 # CONTROLE REMOTO
-# ==========================================================
-
+# 
 def remote_command(soil_percent, raining):
 
     try:
@@ -297,9 +293,9 @@ def remote_command(soil_percent, raining):
 
     return pump.value()
 
-# ==========================================================
+# 
 # ENVIO DADOS
-# ==========================================================
+# 
 
 def send_data(
     soil_percent,
@@ -335,24 +331,22 @@ def send_data(
 
         print("Erro envio:", e)
 
-# ==========================================================
+# 
 # START
-# ==========================================================
-
+# 
 connect_wifi()
 
 # Inicializa servo abaixado
 set_servo_angle(0)
 
-# ==========================================================
 # LOOP PRINCIPAL
-# ==========================================================
+# 
 
 while True:
 
-    # ======================================================
+    # 
     # LEITURAS
-    # ======================================================
+    # 
 
     soil_percent, soil_level = read_soil()
 
@@ -362,34 +356,33 @@ while True:
 
     light_percent = read_light()
 
-    # ======================================================
+    # 
     # CONTROLE SERVO
-    # ======================================================
+    # 
 
     servo_state = control_servo(light_percent)
 
-    # ======================================================
+    # 
     # CONTROLE BOMBA
-    # ======================================================
+    # 
 
     pump_state = automatic_pump_control(
         soil_percent,
         raining
     )
 
-    # ======================================================
+    # 
     # CONTROLE REMOTO
-    # ======================================================
+    # 
 
     pump_state = remote_command(
         soil_percent,
         raining
     )
 
-    # ======================================================
+    # 
     # ENVIO DADOS
-    # ======================================================
-
+    # 
     send_data(
         soil_percent,
         soil_level,
@@ -400,9 +393,9 @@ while True:
         servo_state
     )
 
-    # ======================================================
+    # 
     # SERIAL
-    # ======================================================
+    # 
 
     print("\n==========================")
 
