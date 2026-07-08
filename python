@@ -4,9 +4,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# =========================================================
 # DATABASE
-# =========================================================
 
 def init_db():
 
@@ -32,26 +30,27 @@ def init_db():
 
 init_db()
 
-# =========================================================
-# COMANDO GLOBAL
-# =========================================================
+# CONFIGURAÇÕES
+
+# True  -> Front-end usa simulação
+# False -> Front-end usa dados reais do ESP32
+DEMO_MODE = True
 
 current_command = "AUTO"
 
-# =========================================================
 # HOME
-# =========================================================
 
 @app.route("/")
 def home():
     return render_template("index.html")
 
-# =========================================================
 # RECEBER DADOS DO ESP32
-# =========================================================
 
 @app.route("/api/dados")
 def receber_dados():
+
+    if DEMO_MODE:
+        return "DEMO MODE"
 
     soil = request.args.get("umidade")
     level = request.args.get("nivel")
@@ -77,14 +76,23 @@ def receber_dados():
     )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, (
+
         datetime.now().strftime("%H:%M:%S"),
+
         soil,
+
         level,
+
         rain,
+
         battery,
+
         pump,
+
         light,
+
         servo
+
     ))
 
     conn.commit()
@@ -92,21 +100,34 @@ def receber_dados():
 
     return "OK"
 
-# =========================================================
-# STATUS ATUAL
-# =========================================================
+# STATUS
 
 @app.route("/api/status")
 def status():
+
+    if DEMO_MODE:
+
+        return jsonify({
+
+            "demo": True,
+
+            "command": current_command
+
+        })
 
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
     cursor.execute("""
+
     SELECT *
+
     FROM readings
+
     ORDER BY id DESC
+
     LIMIT 1
+
     """)
 
     row = cursor.fetchone()
@@ -116,34 +137,56 @@ def status():
     if row:
 
         return jsonify({
+
+            "demo": False,
+
             "timestamp": row[1],
+
             "soil": row[2],
+
             "level": row[3],
+
             "rain": row[4],
+
             "battery": row[5],
+
             "pump": row[6],
+
             "light": row[7],
+
             "servo": row[8],
+
             "command": current_command
+
         })
 
-    return jsonify({})
+    return jsonify({
 
-# =========================================================
+        "demo": False
+
+    })
+
 # HISTÓRICO
-# =========================================================
 
 @app.route("/api/historico")
 def historico():
+
+    if DEMO_MODE:
+        return jsonify([])
 
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
     cursor.execute("""
+
     SELECT timestamp, soil
+
     FROM readings
+
     ORDER BY id DESC
+
     LIMIT 20
+
     """)
 
     rows = cursor.fetchall()
@@ -154,9 +197,7 @@ def historico():
 
     return jsonify(rows)
 
-# =========================================================
 # COMANDOS
-# =========================================================
 
 @app.route("/api/comando")
 def comando():
@@ -168,11 +209,45 @@ def comando():
     if mode:
         current_command = mode
 
-    return current_command
+    return jsonify({
 
-# =========================================================
+        "status": "OK",
+
+        "mode": current_command
+
+    })
+
+# INFORMAÇÕES DO SISTEMA
+
+@app.route("/api/system")
+def system():
+
+    return jsonify({
+
+        "demo": DEMO_MODE,
+
+        "version": "2.0",
+
+        "platform": "Smart Irrigation AI",
+
+        "backend": "Flask",
+
+        "database": "SQLite",
+
+        "device": "ESP32"
+
+    })
+
 # START
-# =========================================================
 
 if __name__ == "__main__":
-   app.run(host="0.0.0.0", port=5000, debug=True)
+
+    app.run(
+
+        host="0.0.0.0",
+
+        port=5000,
+
+        debug=True
+
+    )
