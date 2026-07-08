@@ -1,18 +1,29 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
+
     <meta charset="UTF-8">
 
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>Smart Irrigation</title>
+    <title>Smart Irrigation AI</title>
 
-    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
 
-    <title>Smart Irrigation</title>
+    <link rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossorigin>
 
-    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <link rel="stylesheet"
+          href="/static/style.css">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -20,70 +31,413 @@
 
 <body>
 
-    <div class="container">
+<div id="loader">
 
-        <h1>SMART IRRIGATION SYSTEM</h1>
+    <div class="loader-box">
 
-        <div class="cards">
+        <h1>SMART IRRIGATION AI</h1>
 
-            <div class="card">
-                <h2>🌱 Umidade</h2>
-                <p id="soil">0%</p>
-                <span id="level">---</span>
-            </div>
+        <p>Inicializando sistema...</p>
 
-            <div class="card">
-                <h2>🔋 Bateria</h2>
-                <p id="battery">0%</p>
-            </div>
+        <div class="progress">
 
-            <div class="card">
-                <h2>☀️ Luminosidade</h2>
-                <p id="light">0%</p>
-            </div>
-
-            <div class="card">
-                <h2>🌧️ Chuva</h2>
-                <p id="rain">---</p>
-            </div>
-
-            <div class="card">
-                <h2>🚿 Bomba</h2>
-                <p id="pump">---</p>
-            </div>
-
-            <div class="card">
-                <h2>🦾 Servo</h2>
-                <p id="servo">---</p>
-            </div>
-
-        </div>
-
-        <div class="controls">
-
-            <button onclick="sendCommand('ON')">
-                LIGAR
-            </button>
-
-            <button onclick="sendCommand('OFF')">
-                DESLIGAR
-            </button>
-
-            <button onclick="sendCommand('AUTO')">
-                AUTOMÁTICO
-            </button>
-
-        </div>
-
-        <div class="chart-container">
-
-            <canvas id="chart"></canvas>
+            <div class="progress-fill"
+                 id="bootBar"></div>
 
         </div>
 
     </div>
 
-    <script src="/static/script.js"></script>
+</div>
+
+<div id="app">
+
+<header>
+
+    <div>
+
+        <h1>🌿 Smart Irrigation AI</h1>
+
+        <span class="version">
+            Version 2.0 • Adaptive Controller
+        </span>
+
+    </div>
+
+    <div class="status">
+
+        <div class="online">
+
+            <span class="led"></span>
+
+            ONLINE
+
+        </div>
+
+        <div id="clock"></div>
+
+    </div>
+
+</header>
+
+<section class="quick-status">
+
+    <div class="mini-card">
+
+        <i class="bi bi-cpu"></i>
+
+        <div>
+
+            <strong>ESP32</strong>
+
+            <span>Connected</span>
+
+        </div>
+
+    </div>
+
+    <div class="mini-card">
+
+        <i class="bi bi-database"></i>
+
+        <div>
+
+            <strong>SQLite</strong>
+
+            <span>Synced</span>
+
+        </div>
+
+    </div>
+
+    <div class="mini-card">
+
+        <i class="bi bi-hdd-network"></i>
+
+        <div>
+
+            <strong>Flask API</strong>
+
+            <span>Online</span>
+
+        </div>
+
+    </div>
+
+    <div class="mini-card">
+
+        <i class="bi bi-router"></i>
+
+        <div>
+
+            <strong>Wi-Fi</strong>
+
+            <span id="wifi">98%</span>
+
+        </div>
+
+    </div>
+
+</section>
+
+<main>
+
+<section class="dashboard">
+
+<div class="cards">
+
+<div class="card">
+
+<h3>
+
+<i class="bi bi-moisture"></i>
+
+Soil Moisture
+
+</h3>
+
+<div class="value"
+id="soil">
+
+58%
+
+</div>
+
+<div class="progress">
+
+<div id="soilBar"
+class="fill green">
+
+</div>
+
+</div>
+
+<span id="level">
+
+Ideal
+
+</span>
+
+</div>
+
+<div class="card">
+
+<h3>
+
+<i class="bi bi-lightning-charge"></i>
+
+Battery
+
+</h3>
+
+<div id="battery"
+class="value">
+
+89%
+
+</div>
+
+<div class="progress">
+
+<div id="batteryBar"
+class="fill blue">
+
+</div>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<h3>
+
+<i class="bi bi-brightness-high"></i>
+
+Luminosity
+
+</h3>
+
+<div id="light"
+class="value">
+
+72%
+
+</div>
+
+<div class="progress">
+
+<div id="lightBar"
+class="fill yellow">
+
+</div>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<h3>
+
+<i class="bi bi-cloud-rain"></i>
+
+Rain
+
+</h3>
+
+<div id="rain"
+class="value">
+
+No
+
+</div>
+
+</div>
+
+<div class="card">
+
+<h3>
+
+<i class="bi bi-droplet-half"></i>
+
+Water Tank
+
+</h3>
+
+<div id="tank"
+class="value">
+
+82%
+
+</div>
+
+<div class="progress">
+
+<div id="tankBar"
+class="fill cyan">
+
+</div>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<h3>
+
+<i class="bi bi-thermometer-half"></i>
+
+Temperature
+
+</h3>
+
+<div id="temp"
+class="value">
+
+26°C
+
+</div>
+
+</div>
+
+<div class="card">
+
+<h3>
+
+<i class="bi bi-fan"></i>
+
+Air Humidity
+
+</h3>
+
+<div id="air"
+class="value">
+
+63%
+
+</div>
+
+</div>
+
+<div class="card pump-card">
+
+<h3>
+
+<i class="bi bi-water"></i>
+
+Pump
+
+</h3>
+
+<div id="pump"
+class="value">
+
+OFF
+
+</div>
+
+<div id="servoStatus">
+
+Valve Closed
+
+</div>
+
+</div>
+
+</div>
+
+<div class="chart-card">
+
+<h2>
+
+<i class="bi bi-graph-up-arrow"></i>
+
+Real-Time Monitoring
+
+</h2>
+
+<canvas id="chart"></canvas>
+
+</div>
+
+</section>
+
+<aside>
+
+<div class="ai-panel">
+
+<h2>
+
+🤖 Decision Engine
+
+</h2>
+
+<div id="aiMessage">
+
+Waiting for analysis...
+
+</div>
+
+</div>
+
+<div class="log-panel">
+
+<h2>
+
+Activity Log
+
+</h2>
+
+<div id="logs">
+
+</div>
+
+</div>
+
+<div class="controls">
+
+<button onclick="sendCommand('ON')">
+
+<i class="bi bi-play-fill"></i>
+
+START
+
+</button>
+
+<button onclick="sendCommand('OFF')">
+
+<i class="bi bi-stop-fill"></i>
+
+STOP
+
+</button>
+
+<button onclick="sendCommand('AUTO')">
+
+<i class="bi bi-cpu-fill"></i>
+
+AUTO
+
+</button>
+
+</div>
+
+</aside>
+
+</main>
+
+<footer>
+
+Powered by ESP32 • Flask • SQLite • Chart.js
+
+</footer>
+
+</div>
+
+<script src="/static/script.js"></script>
 
 </body>
+
 </html>
