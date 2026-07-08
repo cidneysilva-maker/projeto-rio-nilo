@@ -1,75 +1,481 @@
-const ctx = document.getElementById('chart');
+//=========================================================
+// SMART IRRIGATION AI — Version 2.1
+//=========================================================
 
-const chart = new Chart(ctx, {
+//===============================
+// ELEMENTOS DA TELA
+//===============================
 
-    type: 'line',
+const els = {
+    soil: document.getElementById("soil"),
+    battery: document.getElementById("battery"),
+    light: document.getElementById("light"),
+    rain: document.getElementById("rain"),
+    tank: document.getElementById("tank"),
+    temp: document.getElementById("temp"),
+    air: document.getElementById("air"),
+    pump: document.getElementById("pump"),
+    servo: document.getElementById("servoStatus"),
+    level: document.getElementById("level"),
 
-    data: {
+    soilBar: document.getElementById("soilBar"),
+    batteryBar: document.getElementById("batteryBar"),
+    lightBar: document.getElementById("lightBar"),
+    tankBar: document.getElementById("tankBar"),
 
-        labels: [],
+    aiMessage: document.getElementById("aiMessage"),
+    logs: document.getElementById("logs"),
+    clock: document.getElementById("clock"),
+    wifi: document.getElementById("wifi"),
 
-        datasets: [{
+    loader: document.getElementById("loader"),
+    bootBar: document.getElementById("bootBar"),
+};
 
-            label: 'Umidade do Solo',
+//===============================
+// ESTADO DA APLICAÇÃO
+//===============================
 
-            data: []
-        }]
-    }
-});
+const System = {
+    soil: 58,
+    battery: 91,
+    light: 72,
+    rain: false,
+    tank: 82,
+    temp: 26,
+    air: 63,
+    wifi: 98,
+    pump: false,
+    servo: false,
+    mode: "AUTO",
+    demo: true, // será atualizado a partir de /api/system
+};
 
-async function updateData() {
+//===============================
+// MENSAGENS DA IA
+//===============================
 
-    const response = await fetch('/api/status');
+const aiMessages = [
+    "Analyzing environmental conditions...",
+    "Reading soil moisture...",
+    "Checking weather...",
+    "Monitoring irrigation cycle...",
+    "Evaluating battery...",
+    "Verifying water reservoir...",
+    "Decision Engine running...",
+    "Monitoring crop conditions...",
+    "Waiting for threshold...",
+    "System operating normally...",
+];
 
-    const data = await response.json();
+//===============================
+// CHART.JS
+//===============================
 
-    document.getElementById("soil").innerText =
-        data.soil + "%";
+let chart = null;
 
-    document.getElementById("level").innerText =
-        data.level;
+function createChart() {
+    const canvas = document.getElementById("chart");
+    if (!canvas || typeof Chart === "undefined") return;
 
-    document.getElementById("battery").innerText =
-        data.battery + "%";
-
-    document.getElementById("light").innerText =
-        data.light + "%";
-
-    document.getElementById("rain").innerText =
-        data.rain == 1 ? "SIM" : "NÃO";
-
-    document.getElementById("pump").innerText =
-        data.pump == 1 ? "LIGADA" : "DESLIGADA";
-
-    document.getElementById("servo").innerText =
-        data.servo;
+    chart = new Chart(canvas, {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: "Soil Moisture",
+                    data: [],
+                    borderWidth: 3,
+                    borderColor: "#22C55E",
+                    backgroundColor: "rgba(34,197,94,.15)",
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 0,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+            },
+            scales: {
+                y: { min: 45, max: 100 },
+            },
+        },
+    });
 }
 
-async function updateChart() {
+function pushChartPoint(label, value) {
+    if (!chart) return;
 
-    const response = await fetch('/api/historico');
+    chart.data.labels.push(label);
+    chart.data.datasets[0].data.push(value);
 
-    const data = await response.json();
-
-    chart.data.labels = data.map(item => item[0]);
-
-    chart.data.datasets[0].data =
-        data.map(item => item[1]);
+    if (chart.data.labels.length > 20) {
+        chart.data.labels.shift();
+        chart.data.datasets[0].data.shift();
+    }
 
     chart.update();
 }
 
-async function sendCommand(mode) {
+//===============================
+// UTILS
+//===============================
 
-    await fetch(`/api/comando?mode=${mode}`);
+function rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-setInterval(() => {
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+}
 
-    updateData();
-    updateChart();
+function now() {
+    return new Date().toLocaleTimeString();
+}
 
-}, 3000);
+function setText(el, text) {
+    if (el) el.innerHTML = text;
+}
 
-updateData();
-updateChart();
+//===============================
+// LOGGER
+//===============================
+
+function addLog(text) {
+    if (!els.logs) return;
+
+    const div = document.createElement("div");
+    div.className = "log-item";
+    div.innerHTML = `<strong>${now()}</strong><br>${text}`;
+
+    els.logs.prepend(div);
+
+    while (els.logs.children.length > 12) {
+        els.logs.removeChild(els.logs.lastChild);
+    }
+}
+
+//===============================
+// TYPE EFFECT PARA A IA
+//===============================
+
+let typeTimer = null;
+
+function typeMessage(text) {
+    if (!els.aiMessage) return;
+
+    clearInterval(typeTimer);
+
+    let i = 0;
+    els.aiMessage.innerHTML = "";
+
+    typeTimer = setInterval(() => {
+        els.aiMessage.innerHTML += text.charAt(i);
+        i++;
+
+        if (i >= text.length) {
+            clearInterval(typeTimer);
+        }
+    }, 35);
+}
+
+function randomAI() {
+    typeMessage(aiMessages[rand(0, aiMessages.length - 1)]);
+}
+
+//===============================
+// RELÓGIO
+//===============================
+
+function updateClock() {
+    setText(els.clock, new Date().toLocaleString());
+}
+
+//===============================
+// EFEITO VISUAL NOS CARDS
+//===============================
+
+function pulseCard(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const card = el.closest(".card");
+    if (!card) return;
+
+    card.style.transform = "scale(1.03)";
+    card.style.boxShadow = "0 0 30px rgba(34,197,94,.5)";
+
+    setTimeout(() => {
+        card.style.transform = "";
+        card.style.boxShadow = "";
+    }, 350);
+}
+
+//=========================================================
+// SIMULATION ENGINE (usado apenas em DEMO_MODE)
+//=========================================================
+
+function simulate() {
+    System.wifi = clamp(System.wifi + rand(-1, 1), 92, 100);
+    System.temp = clamp(System.temp + rand(-1, 1), 23, 30);
+
+    if (System.rain) {
+        System.air = clamp(System.air + rand(0, 2), 60, 90);
+        System.light = clamp(System.light + rand(-4, 1), 20, 80);
+    } else {
+        System.air = clamp(System.air + rand(-1, 1), 45, 70);
+        System.light = clamp(System.light + rand(-2, 2), 60, 100);
+    }
+
+    if (Math.random() < 0.03) {
+        System.rain = !System.rain;
+        addLog(System.rain ? "🌧 Rain detected." : "☀ Weather normalized.");
+    }
+}
+
+//=========================================================
+// DECISION ENGINE (usado apenas em DEMO_MODE / modo AUTO)
+//=========================================================
+
+function decisionEngine() {
+    if (System.mode !== "AUTO") return;
+
+    if (System.soil <= 56 && !System.pump) {
+        System.pump = true;
+        System.servo = true;
+        addLog("🚿 Irrigation started.");
+        typeMessage("Low moisture detected.\nStarting irrigation.");
+    }
+
+    if (System.soil >= 61 && System.pump) {
+        System.pump = false;
+        System.servo = false;
+        addLog("✅ Irrigation finished.");
+        typeMessage("Ideal humidity reached.\nMonitoring.");
+    }
+}
+
+//=========================================================
+// SYSTEM PHYSICS (usado apenas em DEMO_MODE)
+//=========================================================
+
+function systemPhysics() {
+    System.soil += System.pump ? rand(1, 2) : -rand(0, 1);
+    if (System.rain) System.soil += 1;
+    System.soil = clamp(System.soil, 45, 80);
+
+    if (System.pump) System.tank -= 0.25;
+    System.tank = clamp(System.tank, 20, 100);
+
+    System.battery += System.pump ? -0.05 : 0.01;
+    System.battery = clamp(System.battery, 75, 100);
+}
+
+//=========================================================
+// DASHBOARD
+//=========================================================
+
+function updateDashboard() {
+    setText(els.soil, Math.round(System.soil) + "%");
+    setText(els.battery, Math.round(System.battery) + "%");
+    setText(els.light, Math.round(System.light) + "%");
+    setText(els.rain, System.rain ? "YES" : "NO");
+    setText(els.tank, Math.round(System.tank) + "%");
+    setText(els.temp, Math.round(System.temp) + "°C");
+    setText(els.air, Math.round(System.air) + "%");
+    setText(els.pump, System.pump ? "ON" : "OFF");
+    setText(els.servo, System.servo ? "Valve Open" : "Valve Closed");
+    setText(els.wifi, Math.round(System.wifi) + "%");
+
+    if (els.soilBar) els.soilBar.style.width = System.soil + "%";
+    if (els.batteryBar) els.batteryBar.style.width = System.battery + "%";
+    if (els.lightBar) els.lightBar.style.width = System.light + "%";
+    if (els.tankBar) els.tankBar.style.width = System.tank + "%";
+
+    pulseCard("soil");
+    pulseCard("battery");
+    pulseCard("light");
+    pulseCard("pump");
+}
+
+//=========================================================
+// INTEGRAÇÃO COM O BACKEND (FLASK)
+//=========================================================
+
+async function fetchJSON(url) {
+    try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } catch (err) {
+        console.warn(`Falha ao buscar ${url}:`, err);
+        return null;
+    }
+}
+
+// Descobre se o backend está em DEMO_MODE ou LIVE_MODE
+async function loadSystemInfo() {
+    const data = await fetchJSON("/api/system");
+
+    if (data) {
+        System.demo = !!data.demo;
+    } else {
+        // fallback: assume modo demo se o backend não responder
+        System.demo = true;
+        addLog("⚠ Não foi possível contatar o backend. Usando modo demonstração.");
+    }
+}
+
+// Busca a leitura mais recente do ESP32 (quando não está em DEMO_MODE)
+async function loadStatus() {
+    const data = await fetchJSON("/api/status");
+    if (!data) return;
+
+    if (data.demo) {
+        System.demo = true;
+        return;
+    }
+
+    System.demo = false;
+    System.mode = data.command ?? System.mode;
+
+    if (data.soil !== undefined) System.soil = Number(data.soil);
+    if (data.battery !== undefined) System.battery = Number(data.battery);
+    if (data.light !== undefined) System.light = Number(data.light);
+    if (data.rain !== undefined) System.rain = Boolean(Number(data.rain));
+    if (data.pump !== undefined) System.pump = Boolean(Number(data.pump));
+    if (data.servo !== undefined) System.servo = data.servo === "1" || data.servo === "open";
+}
+
+// Busca o histórico de leituras e alimenta o gráfico
+async function loadHistorico() {
+    const data = await fetchJSON("/api/historico");
+    if (!data || !Array.isArray(data) || data.length === 0) return;
+    if (!chart) return;
+
+    chart.data.labels = data.map((row) => row[0]);
+    chart.data.datasets[0].data = data.map((row) => Number(row[1]));
+    chart.update();
+}
+
+// Envia o comando (ON / OFF / AUTO) para o backend
+async function sendCommand(mode) {
+    System.mode = mode;
+
+    if (mode === "ON") {
+        System.pump = true;
+        System.servo = true;
+        addLog("🟢 Manual irrigation enabled.");
+        typeMessage("Manual mode activated.");
+    }
+
+    if (mode === "OFF") {
+        System.pump = false;
+        System.servo = false;
+        addLog("🔴 Irrigation stopped.");
+        typeMessage("Manual stop.");
+    }
+
+    if (mode === "AUTO") {
+        addLog("🤖 Automatic mode enabled.");
+        typeMessage("Decision Engine enabled.");
+    }
+
+    try {
+        const res = await fetch(`/api/comando?mode=${encodeURIComponent(mode)}`, {
+            cache: "no-store",
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (err) {
+        console.warn("Falha ao enviar comando ao backend:", err);
+        addLog("⚠ Comando aplicado apenas localmente (backend indisponível).");
+    }
+}
+
+// Expõe sendCommand para os botões inline no HTML
+window.sendCommand = sendCommand;
+
+//=========================================================
+// MAIN LOOP
+//=========================================================
+
+async function mainLoop() {
+    if (System.demo) {
+        simulate();
+        decisionEngine();
+        systemPhysics();
+    } else {
+        await loadStatus();
+    }
+
+    updateDashboard();
+    pushChartPoint(now(), System.soil);
+}
+
+//=========================================================
+// BOOT SCREEN
+//=========================================================
+
+function bootSystem() {
+    return new Promise((resolve) => {
+        if (!els.bootBar || !els.loader) {
+            resolve();
+            return;
+        }
+
+        let progress = 0;
+
+        const timer = setInterval(() => {
+            progress += rand(8, 18);
+            progress = clamp(progress, 0, 100);
+            els.bootBar.style.width = progress + "%";
+
+            if (progress >= 100) {
+                clearInterval(timer);
+
+                els.loader.style.opacity = "0";
+                setTimeout(() => {
+                    els.loader.style.display = "none";
+                    resolve();
+                }, 400);
+            }
+        }, 150);
+    });
+}
+
+//=========================================================
+// STARTUP
+//=========================================================
+
+async function start() {
+    createChart();
+
+    await bootSystem();
+    await loadSystemInfo();
+
+    addLog("System initialized.");
+    addLog(System.demo ? "Demo mode enabled." : "ESP32 connected.");
+    addLog("Database synchronized.");
+    addLog("Decision Engine online.");
+
+    if (!System.demo) {
+        await loadHistorico();
+        await loadStatus();
+    }
+
+    randomAI();
+    updateDashboard();
+    updateClock();
+
+    setInterval(updateClock, 1000);
+    setInterval(mainLoop, 3000);
+    setInterval(randomAI, 7000);
+}
+
+start();
